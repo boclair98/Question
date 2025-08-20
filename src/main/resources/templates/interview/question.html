@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <title>면접 질문 - 질문 기록 포함</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            margin: 0;
+            height: 100vh;
+            display: flex;
+        }
+
+        /* 질문 기록 사이드바 스타일 */
+        #historySidebar {
+            width: 280px;
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border-radius: 1.5rem 0 0 1.5rem;
+            box-shadow: inset -5px 0 20px rgba(0,0,0,0.2);
+            padding: 2rem 1.5rem;
+            color: white;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #historySidebar h2 {
+            font-weight: 700;
+            font-size: 1.4rem;
+            margin-bottom: 1rem;
+            text-align: center;
+            border-bottom: 2px solid rgba(255,255,255,0.3);
+            padding-bottom: 0.5rem;
+        }
+
+        #historyList {
+            flex-grow: 1;
+            overflow-y: auto;
+            list-style: decimal inside;
+            line-height: 1.5;
+            font-size: 0.95rem;
+        }
+
+        #historyList li {
+            margin-bottom: 0.8rem;
+        }
+
+        /* 메인 컨텐츠 */
+        #mainContent {
+            flex-grow: 1;
+            padding: 3rem 3rem 3rem 5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            color: white;
+            position: relative;
+        }
+
+        /* 나머지는 기존 스타일 간략히 */
+        .glass-container {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(15px);
+            border-radius: 1.5rem;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            padding: 3rem 2rem;
+            max-width: 720px;
+            margin: auto;
+        }
+
+        .question-box {
+            background: rgba(255, 255, 255, 0.25);
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 3rem;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            font-weight: 600;
+            font-size: 1.6rem;
+            line-height: 1.3;
+            text-align: center;
+            min-height: 100px;
+        }
+
+        .timer-circle {
+            position: relative;
+            width: 130px;
+            height: 130px;
+            margin: 0 auto 1.5rem;
+        }
+
+        .timer-circle svg {
+            transform: rotate(-90deg);
+            width: 130px;
+            height: 130px;
+        }
+
+        .timer-circle circle {
+            fill: none;
+            stroke-width: 10;
+            stroke-linecap: round;
+        }
+
+        .timer-circle .bg {
+            stroke: rgba(255, 255, 255, 0.2);
+        }
+
+        .timer-circle .progress {
+            stroke: #ffec00;
+            stroke-dasharray: 377;
+            stroke-dashoffset: 0;
+            transition: stroke-dashoffset 1s linear;
+        }
+
+        .timer-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-weight: 600;
+            font-size: 2.5rem;
+            user-select: none;
+            color: #ffec00;
+            text-shadow: 0 0 8px #ffec00;
+        }
+
+        .warning {
+            color: #ff5252 !important;
+            text-shadow: 0 0 10px #ff5252 !important;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #ffec00, #f5d300);
+            color: #111;
+            font-weight: 600;
+            padding: 1rem 2rem;
+            border-radius: 9999px;
+            box-shadow: 0 6px 12px rgba(255, 236, 0, 0.5);
+            transition: all 0.3s ease;
+            width: 100%;
+            max-width: 400px;
+            margin: auto;
+            display: block;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .btn-primary:hover {
+            filter: brightness(1.1);
+            box-shadow: 0 10px 20px rgba(255, 236, 0, 0.75);
+            transform: translateY(-2px);
+        }
+    </style>
+    <script>
+        const thinkTime = 10;
+        const answerTime = 30;
+        let totalTime = thinkTime + answerTime;
+        let timerEl, phaseEl, progressPath;
+        let intervalId;
+
+        // 질문 기록 관련
+        let STORAGE_KEY;
+
+        function loadQuestionHistory() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                return JSON.parse(saved);
+            }
+            return [];
+        }
+
+        function saveQuestionHistory(history) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+        }
+
+        function renderQuestionHistory(history) {
+            const ul = document.getElementById("historyList");
+            ul.innerHTML = "";
+            history.forEach((q) => {
+                const li = document.createElement("li");
+                li.textContent = q;
+                ul.appendChild(li);
+            });
+        }
+
+        function updateProgress() {
+            const circumference = 2 * Math.PI * 60;
+            const progress = totalTime / (thinkTime + answerTime);
+            const dashoffset = circumference * (1 - progress);
+            progressPath.style.strokeDashoffset = dashoffset;
+        }
+
+        function startTimer() {
+            timerEl.textContent = totalTime;
+            phaseEl.textContent = "질문 확인 중...";
+            phaseEl.classList.remove("warning");
+            timerEl.classList.remove("warning");
+            updateProgress();
+
+            intervalId = setInterval(() => {
+                totalTime--;
+                timerEl.textContent = totalTime;
+                updateProgress();
+
+                if (totalTime === answerTime) {
+                    phaseEl.textContent = "답변 시간 시작!";
+                    phaseEl.classList.remove("warning");
+                    timerEl.classList.remove("warning");
+                }
+
+                if (totalTime <= 10) {
+                    phaseEl.textContent = "⚠️ 시간 얼마 남지 않았어요!";
+                    phaseEl.classList.add("warning");
+                    timerEl.classList.add("warning");
+                }
+
+                if (totalTime <= 0) {
+                    clearInterval(intervalId);
+                    document.getElementById("nextForm").submit();
+                }
+            }, 1000);
+        }
+
+        window.onload = () => {
+            timerEl = document.getElementById("timer");
+            phaseEl = document.getElementById("phase");
+            progressPath = document.getElementById("progressPath");
+
+            const job = document.querySelector('input[name="job"]').value;
+            const type = document.querySelector('input[name="type"]').value;
+            STORAGE_KEY = `interviewQuestionHistory_${job}_${type}`;
+
+            // 현재 질문 받아오기 (th:text로 출력되는 부분에서)
+            const currentQuestion = document.querySelector(".question-box").textContent.trim();
+
+            // 기록 불러와서 추가
+            let history = loadQuestionHistory();
+
+            if (!history.includes(currentQuestion)) {
+                history.push(currentQuestion);
+                saveQuestionHistory(history);
+            }
+            renderQuestionHistory(history);
+
+            startTimer();
+        };
+    </script>
+</head>
+<body>
+
+<div id="historySidebar">
+    <h2>📜 지금까지 나온 질문들</h2>
+    <ol id="historyList">
+        <!-- 질문 기록 리스트가 여기 렌더링됩니다 -->
+    </ol>
+</div>
+
+<div id="mainContent" class="glass-container">
+    <h1 class="text-4xl mb-6 text-center">📝 면접 질문</h1>
+
+    <div class="question-box" th:text="${question[0]}">
+        여기에 질문 내용이 표시됩니다.
+    </div>
+
+    <div class="timer-circle">
+        <svg id="progressCircle" viewBox="0 0 140 140">
+            <circle class="bg" cx="70" cy="70" r="60" />
+            <circle id="progressPath" class="progress" cx="70" cy="70" r="60" stroke-dasharray="377" stroke-dashoffset="0" />
+        </svg>
+        <div class="timer-text" id="timer">40</div>
+    </div>
+
+    <p id="phase" class="text-center text-xl mb-8"></p>
+
+    <form id="nextForm" action="/start-question" method="POST" class="max-w-sm mx-auto">
+        <input type="hidden" name="job" th:value="${job}" />
+        <input type="hidden" name="type" th:value="${type}" />
+        <button type="submit" class="btn-primary">
+            다음 질문 보기 (수동)
+        </button>
+    </form>
+</div>
+
+</body>
+</html>

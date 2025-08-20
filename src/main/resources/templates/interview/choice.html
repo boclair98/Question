@@ -1,0 +1,38 @@
+<!-- templates/select-interview-type.html -->
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <title>면접 유형 선택</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-r from-indigo-300 via-purple-400 to-pink-400 min-h-screen flex items-center justify-center">
+
+<div class="bg-white shadow-2xl rounded-2xl p-10 w-full max-w-md text-center">
+    <h2 class="text-3xl font-extrabold text-gray-800 mb-6">면접 유형을 선택하세요</h2>
+    <p class="text-gray-600 mb-8 text-sm">선택한 직무에 따라 면접 질문이 달라집니다</p>
+
+    <form action="/start-question" method="POST">
+        <!-- Thymeleaf로 job 값 전달 -->
+        <input type="hidden" id ="job" name="job" th:value="${job}" />
+
+        <div class="space-y-4">
+            <button type="submit" id="type" name="type" value="personality"
+                    class="w-full py-3 px-6 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition duration-200">
+                🧠 인성 면접
+            </button>
+
+            <button type="submit" id="type" name="type" value="technical"
+                    class="w-full py-3 px-6 bg-green-500 text-white rounded-lg shadow-md hover:bg-green-600 transition duration-200">
+                💻 직무 면접
+            </button>
+        </div>
+    </form>
+
+    <div class="mt-10 text-sm text-gray-500">
+        선택한 직무: <span class="font-semibold text-gray-700" th:text="${job}">개발자</span>
+    </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ko" >
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>질문 등록 - Tailwind CSS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+<div class="bg-white rounded-lg shadow-lg max-w-md w-full p-8">
+    <h2 class="text-2xl font-semibold text-gray-800 mb-6 text-center">면접 질문 등록</h2>
+    <form id="questionForm" class="space-y-5">
+        <div>
+            <label for="job" class="block text-gray-700 font-medium mb-2">직무 선택</label>
+            <select id="job" name="job" required
+                    class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="" disabled selected>직무를 선택하세요</option>
+                <option value="developer">Developer</option>
+                <option value="designer">Designer</option>
+                <option value="marketing">Marketing</option>
+                <option value="sales">Sales</option>
+                <option value="semiconductor">Semiconductor</option>
+            </select>
+        </div>
+
+        <div>
+            <label for="type" class="block text-gray-700 font-medium mb-2">질문 유형</label>
+            <select id="type" name="type" required
+                    class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="" disabled selected>유형을 선택하세요</option>
+                <option value="personality">Personality</option>
+                <option value="technical">Technical</option>
+            </select>
+        </div>
+
+        <div>
+            <label for="text" class="block text-gray-700 font-medium mb-2">질문 내용</label>
+            <textarea id="text" name="text" placeholder="질문 내용을 입력하세요" required
+                      class="w-full border border-gray-300 rounded-md px-3 py-2 resize-y focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px]"></textarea>
+        </div>
+
+        <button type="submit"
+                class="w-full bg-blue-600 text-white font-semibold py-2 rounded-md hover:bg-blue-700 transition-colors">
+            질문 등록
+        </button>
+
+        <p id="message" class="text-center mt-3 text-sm"></p>
+    </form>
+</div>
+
+<script>
+    const form = document.getElementById('questionForm');
+    const message = document.getElementById('message');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const job = form.job.value;
+      const type = form.type.value;
+      const text = form.text.value.trim();
+
+      message.textContent = '';
+      message.className = 'text-center mt-3 text-sm';
+
+      if (!job || !type || !text) {
+        message.textContent = '모든 필드를 입력해주세요.';
+        message.classList.add('text-red-600');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/questions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ job, type, text }),
+        });
+
+        if (res.ok) {
+          message.textContent = '질문이 성공적으로 등록되었습니다!';
+          message.classList.add('text-green-600');
+          form.reset();
+        } else {
+          const err = await res.json();
+          message.textContent = '등록 실패: ' + (err.message || res.statusText);
+          message.classList.add('text-red-600');
+        }
+      } catch {
+        message.textContent = '서버 오류가 발생했습니다.';
+        message.classList.add('text-red-600');
+      }
+    });
+</script>
+</body>
+</html>
