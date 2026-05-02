@@ -11,6 +11,7 @@ import jakarta.validation.constraints.*;
 import javax.xml.stream.XMLEventWriter;
 
 @Entity
+@Table(name = "users")
 @Getter @Setter
 public class User {
     @Id

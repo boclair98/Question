@@ -13,12 +13,15 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import org.springframework.validation.BindingResult;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Controller
@@ -70,6 +73,34 @@ public class MainController {
         return "user/login";
     }
 
+    @GetMapping("/add-question")
+    public String addQuestion(HttpSession session) {
+        return QuestionAdd(session);
+    }
+
+    @PostMapping("/api/questions")
+    public ResponseEntity<Map<String, String>> addQuestionApi(
+            @RequestBody QuestionRequest request,
+            HttpSession session
+    ) {
+        if (session.getAttribute("loginUser") == null) {
+            return ResponseEntity.status(401).body(Map.of("message", "로그인이 필요합니다."));
+        }
+
+        if (request.job() == null || request.type() == null || request.text() == null || request.text().isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "직무, 유형, 질문 내용을 모두 입력해주세요."));
+        }
+
+        questionService.addQuestion(request.job(), request.type(), request.text().trim());
+        return ResponseEntity.ok(Map.of("message", "질문이 등록되었습니다."));
+    }
+
+    @PostMapping("/logout")
+    public String logout(HttpSession session) {
+        session.invalidate();
+        return "redirect:/";
+    }
+
     @GetMapping("/login")
     public String login(){
         return "user/login";
@@ -115,5 +146,8 @@ public class MainController {
         // 3. 저장 후 성공 페이지로 이동
         userService.save(user);
         return "redirect:/";
+    }
+
+    private record QuestionRequest(String job, String type, String text) {
     }
 }

@@ -551,6 +551,22 @@ public class QuestionService {
 
         return mutablePool.subList(0, Math.min(count, mutablePool.size()));
     }
+
+    public void addQuestion(String job, String type, String text) {
+        Map<String, List<String>> targetQuestions;
+
+        if ("personality".equals(type)) {
+            targetQuestions = personalityQuestions;
+        } else if ("technical".equals(type)) {
+            targetQuestions = technicalQuestions;
+        } else {
+            throw new IllegalArgumentException("지원하지 않는 질문 유형입니다.");
+        }
+
+        List<String> currentQuestions = new ArrayList<>(targetQuestions.getOrDefault(job, List.of()));
+        currentQuestions.add(text);
+        targetQuestions.put(job, currentQuestions);
+    }
 }
 
 
